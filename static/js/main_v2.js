@@ -651,23 +651,26 @@ var vm = new Vue({
 
                     }
 
-                    if (subobj.fields["System.WorkItemType"] == "Engagement") {
-                        that.engagements.push(
-                            {
-                                id: parseInt(child),
-                                title: subobj.fields["System.Title"],
-                                assignedto: subobj.fields["System.AssignedTo"]?subobj.fields["System.AssignedTo"]["displayName"]:'-',
-                                description: that.strip(subobj.fields["System.Description"]),
-                                status:subobj.fields["CSEngineering-V2.OverallStatus"],
-                                organization:parentobj.name,
-                            }
-                        )
-                    }
+                    
 
                     childobj.label = `<a href="https://csefy19.visualstudio.com/Organizations/_workitems/edit/${childobj.id}" target="_blank" style="color:#0077c0;">${childobj.label}</a>`
                     childobj.idlabel = `<a href="https://csefy19.visualstudio.com/Organizations/_workitems/edit/${childobj.id}" target="_blank" style="color:#0077c0;">${childobj.id}</a>`
 
 
+                    if (subobj.fields["System.WorkItemType"] == "Engagement") {
+                        that.engagements.push(
+                            {
+                                id: parseInt(child),
+                                title: childobj.label,
+                                assignedto: subobj.fields["System.AssignedTo"]?subobj.fields["System.AssignedTo"]["displayName"]:'-',
+                                description: that.strip(subobj.fields["System.Description"]),
+                                label: childobj.name,
+                                status:subobj.fields["CSEngineering-V2.OverallStatus"],
+                                organization:parentobj.label,
+                            }
+                        )
+                    }
+                    
                     var status = subobj.fields["CSEngineering-V2.OverallStatus"]
                     childobj.status = status
                     if (status) {
@@ -870,7 +873,7 @@ var vm = new Vue({
                 maxPatternLength: 32,
                 minMatchCharLength: 1,
                 keys: [
-                    "title",
+                    "label",
                     "description"
                 ],
                 id: 'id'
@@ -941,7 +944,8 @@ var vm = new Vue({
             })
 
             that.engagements.forEach((eng)=>{
-                eng.category = categoriesData[eng.id].join(",")
+                if(categoriesData[eng.id])
+                    eng.category = '<pre>'+categoriesData[eng.id].join("\n")+'</pre>'
             })
 
             //console.log(categoriesData);

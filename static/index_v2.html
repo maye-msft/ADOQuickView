@@ -141,15 +141,9 @@
 
                             </v-tab-item> -->
                             <v-tab-item key="dashboard" class="mx-3 my-3  elevation-3">
-                                <v-data-table 
-                                disable-pagination="true" 
-                                fixed-header="true" 
-                                :headers="headers" 
-                                :items="engagements" 
-                                items-per-page="25" 
-                                item-key="id"
-                                group-by="category"
-                                class="elevation-2">
+                                <v-data-table disable-pagination="true" fixed-header="true" :headers="headers"
+                                    :items="engagements" items-per-page="25" item-key="id" group-by="category"
+                                    class="elevation-2">
 
                                     <template v-slot:items="props">
                                         <tr>
@@ -159,7 +153,8 @@
                                     </template>
                                 </v-data-table>
 
-                                <hr></hr>
+                                <hr>
+                                </hr>
 
                                 <gantt-elastic :tasks="tasks" :options="options">
                                     <!-- <gantt-header slot="header"></gantt-header> -->
@@ -421,7 +416,7 @@
     </script>
     <script src="/ado_data/results.js"></script>
     <script src="/ado_data/result_items.js"></script>
-    <script src="/ado_data/scenarios.js"></script>
+    <script src="/public/js/scenarios.js"></script>
     <script src="/node_modules/fuse.js/dist/fuse.js"></script>
     <script src="/node_modules/vue/dist/vue.min.js"></script>
     <script src="/node_modules/vuetify/dist/vuetify.min.js"></script>
