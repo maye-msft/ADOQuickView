@@ -86,3 +86,12 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+
+dest/
+package-lock.json
+ado_data/
+
+.env.ado
+.vscode/
+executable/

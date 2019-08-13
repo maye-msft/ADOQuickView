@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet">
+    <!-- <link href="/node_modules/material-design-icons-iconfont/dist/material-design-icons.css" rel="stylesheet"> -->
+    <!-- <link href="/node_modules/material-design-icons/iconfont/material-icons.css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet"> -->
+    <link href="/node_modules/vuetify/dist/vuetify.min.css" rel="stylesheet">
+    <link href="/node_modules/vue-d3-network/dist/vue-d3-network.css" rel="stylesheet">
+    <link href="/node_modules/chart.js/dist/Chart.min.css" rel="stylesheet">
+    <meta name="viewport" content="">
+
+    <style>
+        .v-treeview-node__label {
+            font-size: 1rem;
+            margin-left: 5px;
+            flex-grow: 1;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app id="inspire">
+
+            <v-toolbar app dense fixed clipped-left color="blue darken-3">
+                <v-toolbar-title>ADO Quick View</v-toolbar-title>
+            </v-toolbar>
+            <v-content>
+                <v-container fluid>
+                    <v-layout fluid wrap justify-center id="container">
+                        <v-flex xs12 md3 class="px-2">
+
+                            <v-menu v-model="menu1" :close-on-content-click="false" transition="scale-transition"
+                                offset-y full-width>
+                                <template v-slot:activator="{ on }">
+                                    <v-text-field v-model="fromDate" label="From " prepend-icon="event" readonly
+                                        v-on="on"></v-text-field>
+                                </template>
+                                <v-date-picker v-model="fromDate2" no-title @input="menu2 = false"></v-date-picker>
+                            </v-menu>
+                        </v-flex>
+
+                        <v-flex xs12 md3 class="px-2">
+                            <v-menu v-model="menu2" :close-on-content-click="false" transition="scale-transition"
+                                offset-y full-width>
+                                <template v-slot:activator="{ on }">
+                                    <v-text-field v-model="toDate" label="To" prepend-icon="event" readonly v-on="on">
+                                    </v-text-field>
+                                </template>
+                                <v-date-picker v-model="toDate2" no-title @input="menu2 = false"></v-date-picker>
+                            </v-menu>
+                        </v-flex>
+
+                        <v-flex xs12 md3 class="px-2">
+                            <v-select v-model="industry" :items="industryitems" label="Select Industry" multiple>
+
+                            </v-select>
+                        </v-flex>
+                        <v-flex xs12 md3 class="px-2">
+                            <v-btn block color="primary" @click="queryworkitems">Load</v-btn>
+                        </v-flex>
+                    </v-layout>
+                    <div style="text-align: center">
+                        <v-progress-linear :indeterminate="loading" :value="progressvalue" reactive height="25">
+
+                            <strong v-if="objectlength>0">{{progressvalue}}% ({{ progresscount }} / {{ objectlength }})
+                            </strong>
+                        </v-progress-linear>
+                    </div>
+                    <v-card fluid wrap justify-center class="py-2">
+
+
+                        <v-tabs v-model="tab" background-color="transparent" color="basil" grow>
+                            <v-tab key="results">
+                                Results
+                            </v-tab>
+                            <v-tab key="gantt">
+                                Gantt
+                            </v-tab>
+                            <v-tab key="category">
+                                Scenario
+                            </v-tab>
+                        </v-tabs>
+
+                        <v-tabs-items v-model="tab">
+                            <v-tab-item key="results">
+                                <v-layout justify-space-between pa-4>
+                                    <v-flex xs5 style="overflow-y: auto;max-height: 400px" class="elevation-3">
+                                        <v-treeview dense hoverable transition activatable :active.sync="activeworkitem"
+                                            :items="treeitems"></v-treeview>
+                                    </v-flex>
+
+                                    <v-divider vertical></v-divider>
+
+                                    <v-flex xs7 d-flex text-center class="">
+                                        <v-scroll-y-transition mode="out-in">
+                                            <div v-if="!selectedworkitem"
+                                                class="title grey--text text--lighten-1 font-weight-light"
+                                                style="text-align: center">
+                                                Select an Item
+                                            </div>
+                                            <v-card fluid v-else :key="selectedworkitem"
+                                                class="pt-6 mx-auto elevation-3" flat max-height="400"
+                                                style="overflow-y: auto">
+                                                <v-layout tag="v-card-text" text-left wrap>
+                                                    <template
+                                                        v-for="fieldkey in Object.keys(objects[selectedworkitem].value.fields)">
+                                                        <template
+                                                            v-if="typeof objects[selectedworkitem].value.fields[fieldkey] != 'object'">
+                                                            <v-flex tag="strong" xs12 text-right>{{fieldkey}}:
+                                                            </v-flex>
+                                                            <v-flex xs12
+                                                                v-html="objects[selectedworkitem].value.fields[fieldkey]">
+                                                            </v-flex>
+                                                        </template>
+                                                        <template v-else
+                                                            v-for="subfieldkey in Object.keys(objects[selectedworkitem].value.fields[fieldkey] )">
+                                                            <template
+                                                                v-if="typeof objects[selectedworkitem].value.fields[fieldkey][subfieldkey] != 'object'">
+                                                                <v-flex tag="strong" xs12 text-right>{{fieldkey}} -
+                                                                    {{subfieldkey}}:
+                                                                </v-flex>
+                                                                <v-flex xs12
+                                                                    v-html="objects[selectedworkitem].value.fields[fieldkey][subfieldkey]">
+                                                                </v-flex>
+                                                            </template>
+                                                        </template>
+                                                    </template>
+
+                                                </v-layout>
+                                            </v-card>
+
+                                        </v-scroll-y-transition>
+                                    </v-flex>
+                                </v-layout>
+
+                            </v-tab-item>
+                            <v-tab-item key="gantt" class="mx-3 my-3  elevation-3">
+                                <gantt-elastic :tasks="tasks" :options="options">
+                                    <gantt-header slot="header"></gantt-header>
+                                </gantt-elastic>
+                            </v-tab-item>
+                            <v-tab-item key="category">
+                                <v-card fluid wrap justify-center class="mx-2 my-2">
+                                    <v-tabs v-model="tab2" background-color="transparent">
+                                        <v-tab key="analysis">
+                                            Analysis
+                                        </v-tab>
+                                        <v-tab key="entities">
+                                            Entity
+                                        </v-tab>
+                                        <v-tab key="categories">
+                                            Category
+                                        </v-tab>
+                                    </v-tabs>
+                                    <v-tabs-items v-model="tab2">
+                                        <v-tab-item key="analysis">
+                                            <v-layout justify-space-between pa-4>
+                                                <scenarios-view></scenarios-view>
+                                            </v-layout>
+                                        </v-tab-item>
+
+                                        <v-tab-item key="entities">
+                                            <v-layout justify-space-between pa-4>
+                                                <entity-view></entity-view>
+                                            </v-layout>
+                                        </v-tab-item>
+                                        <v-tab-item key="categories">
+                                            <v-layout justify-space-between pa-4>
+                                                <category-view></category-view>
+                                            </v-layout>
+                                        </v-tab-item>
+                                    </v-tabs-items>
+                                </v-card>
+                            </v-tab-item>
+
+                        </v-tabs-items>
+                    </v-card>
+                </v-container>
+            </v-content>
+            <v-footer app fixed>
+                <span>&copy; 2019</span>
+            </v-footer>
+        </v-app>
+    </div>
+
+    <script type="text/x-template" id="my-recursive-component">
+        <template
+            v-for="fieldkey in Object.keys(object)">
+            <v-flex tag="strong" xs12 text-right >{{fieldkey}}:
+            </v-flex>
+            <v-flex xs12 v-if="typeof object[fieldkey] != 'object'" v-html="object[fieldkey]">
+            </v-flex>
+            <v-flex xs12 v-else> 
+                <my-recursive-component object="object[fieldkey]"></my-recursive-component>
+            </v-flex>
+        
+        </template>
+      </script>
+    <script type="text/x-template" id="scenarios-template">
+        <v-flex xs12 sm12 style="min-height: 400px" >
+                <v-card>
+        <v-data-table
+        :headers="headers"
+        :items="desserts"
+        :items-per-page="5"
+        class="elevation-1"
+      ></v-data-table>
+                </v-card>
+            </v-flex>
+    </script>
+    <script type="text/x-template" id="entity-template">
+        <v-flex xs12 sm12 >
+            <v-card>
+                <v-toolbar dense flat color="teal" dark>
+                        <v-btn icon @click="addEntity('Entity')">
+                                <v-icon>add</v-icon>
+                            </v-btn>
+                    <v-toolbar-title>Entity</v-toolbar-title>
+                    <v-spacer></v-spacer>
+                    
+                </v-toolbar>
+
+                  <v-expansion-panel focusable >
+                    <v-expansion-panel-content
+                      v-for="(entity,i) in entities"
+                      :key="i"
+                    >
+                      <template v-slot:header>
+                        <div>{{entity.name}}</div>
+                      </template>
+                      <v-card class="py-3 " > 
+                            
+                            <v-flex xs12 class=" mx-4 my-4 px-3 py-3 elevation-5">
+                                    <v-text-field
+                                        v-model="entity.name"
+                                      label="Entity Name"
+                                    ></v-text-field>
+                            
+                                <v-textarea
+                                    v-model="entity.keywords"
+                                    name="input-7-1"
+                                    
+                                    label="Keywords"
+                                    auto-grow
+                                    value=""
+                                    placeholder="input keywords, each line for one keyword"
+                                ></v-textarea>
+                            </v-flex>
+
+                     
+
+
+                        <div class="text-xs-right px-3">
+                            
+                            <v-btn 
+                                color="warning"
+                                @click="removeEntity(i)"
+                                
+                            >
+                                Remove Entity
+                            </v-btn>
+                                
+                        </div>
+                      </v-card>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+
+                  <v-btn @click="addEntity('Entity')" class="my-3" color="primary">
+                    Add Entity
+                </v-btn>
+
+            </v-card>
+        </v-flex>
+    </script>
+
+
+    <script type="text/x-template" id="category-template">
+        <v-flex xs12 sm12 >
+            <v-card>
+                <v-toolbar dense flat color="teal" dark>
+                        <v-btn icon @click="addCategory('Category')">
+                                <v-icon>add</v-icon>
+                            </v-btn>
+                    <v-toolbar-title>Category</v-toolbar-title>
+                    <v-spacer></v-spacer>
+                    
+                </v-toolbar>
+
+                  <v-expansion-panel focusable>
+                    <v-expansion-panel-content
+                      v-for="(category,i) in categories"
+                      :key="i"
+                    >
+                      <template v-slot:header>
+                        <div>{{category.name}}</div>
+                      </template>
+                      <v-card class="py-3">
+                                <v-flex xs12 class=" mx-4 my-4 px-3 py-3 elevation-3">
+                                    <v-text-field
+                                        v-model="category.name"
+                                        label="Category Name"
+
+                                    ></v-text-field>
+                                </v-flex>
+
+                                    <v-list
+                                    subheader
+                                    three-line
+                                    class="mx-3"
+                                    >
+                                    
+        
+          
+                                        <template grid-list-md text-xs-center v-for="(rule, index) in category.rules" >
+                                            <v-card class=" mx-2 my-4 px-3 py-3 elevation-3">
+                                            <v-subheader>Rule #{{index+1}}</v-subheader>
+                                            <v-layout row wrap >
+                                                
+                                                <v-flex xs12 md12  d-flex>
+                                                        <v-combobox
+                                                            v-model= "rule.primaryobjects"
+                                                            :items="entities"
+                                                            item-text="name"
+                                                            item-value="name"
+                                                            label="Primary Condition Entities"
+                                                            multiple
+                                                        ></v-combobox>
+                                                </v-flex>
+                                            
+                                                
+                                                <v-flex xs12 md12 d-flex>
+                                                        <v-combobox
+                                                            v-model= "rule.secondaryobjects"
+                                                            :items="entities"
+                                                            item-text="name"
+                                                            item-value="name"
+                                                            label="Secondary Condition Entities"
+                                                            multiple
+                                                        ></v-combobox>
+                                                </v-flex>
+
+                                            </v-layout>
+                                            <div class="text-xs-right">
+                                                    <v-btn 
+                                                        color="warning"
+                                                        @click="removeCategoryRule([i, index])"
+                                                    >
+                                                        Remove Rule
+                                                    </v-btn>
+                                                </div>
+                                            </v-card>
+                                            </template>
+        
+                                                
+                                    
+                                </v-list>
+        
+                                <v-layout row wrap>
+                                        <v-flex xs6 class="text-xs-left px-3">
+                                            <v-btn
+
+                                            color="success"
+                                            @click="addCategoryRule([i, 'Rule'])"
+                                            >
+                                            Add Rule
+                                            </v-btn>
+                                        </v-flex>
+                                        <v-flex xs6 class="text-xs-right px-3">
+
+                                            <v-btn 
+                                            color="warning"
+                                            @click="removeCategory(i)"
+                                        >
+                                            Remove Category
+                                        
+                                            </v-btn>
+                                        </v-flex>
+                                </v-layout>
+        
+                                
+
+
+
+                      </v-card>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+
+                  <v-btn  @click="addCategory('Category')" class="my-3" color="primary">
+                    Add Category
+                </v-btn>
+            </v-card>
+        </v-flex>
+    </script>
+    <script src="/ado_data/results.js"></script>
+    <script src="/ado_data/result_items.js"></script>
+    <script src="/ado_data/scenarios.js"></script>
+    <script src="/node_modules/vue/dist/vue.min.js"></script>
+    <script src="/node_modules/vuetify/dist/vuetify.min.js"></script>
+    <script src="/node_modules/chart.js/dist/Chart.bundle.min.js"></script>
+    <script src="/node_modules/vue-chartjs/dist/vue-chartjs.min.js"></script>
+    <script src="/node_modules/vue-chartkick/dist/vue-chartkick.min.js"></script>
+
+    <script src="/node_modules/vuex/dist/vuex.min.js"></script>
+    <script src="/node_modules/vue-router/dist/vue-router.min.js"></script>
+
+    <script src="/node_modules/file-saver/dist/FileSaver.min.js"></script>
+    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="/node_modules/node-nlp/dist/bundle.js"></script>
+
+    <script src="/node_modules/vue-d3-network/dist/vue-d3-network.umd.min.js"></script>
+    <script src="/node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="/node_modules/echarts-wordcloud/dist/echarts-wordcloud.min.js"></script>
+    <script src="/node_modules/dayjs/dayjs.min.js"></script>
+    <script src="/node_modules/gantt-elastic/dist/GanttElastic.umd.min.js"></script>
+    <script src="/node_modules/gantt-elastic-header/dist/Header.umd.js"></script>
+    <!-- <script src="/node_modules/vue-resize-directive/dist/Vueresize.js"></script> -->
+
+
+    <!-- <script src="/node_modules/comma-separated-values/csv.min.js"></script> -->
+    <!-- <script src="/node_modules/csv-js/csv.js"></script> -->
+
+    <script src="/public/js/main_v2.js"></script>
+    <script src="/public/js/CSV.js"></script>
+
+</body>
+
+</html>
