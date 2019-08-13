@@ -69,23 +69,26 @@
                             </strong>
                         </v-progress-linear>
                     </div>
+
+
+
+
+                    <!-- <v-data-table :headers="headers" :items="desserts"></v-data-table> -->
+
                     <v-card fluid wrap justify-center class="py-2">
 
 
-                        <v-tabs v-model="tab" background-color="transparent" color="basil" grow>
-                            <v-tab key="results">
-                                Results
+                        <v-tabs v-model="tab" background-color="transparent" color="basil">
+                            <v-tab key="dashboard">
+                                Dashboard
                             </v-tab>
-                            <v-tab key="gantt">
-                                Gantt
-                            </v-tab>
-                            <v-tab key="category">
-                                Scenario
+                            <v-tab key="settings">
+                                Settings
                             </v-tab>
                         </v-tabs>
 
                         <v-tabs-items v-model="tab">
-                            <v-tab-item key="results">
+                            <!-- <v-tab-item key="results">
                                 <v-layout justify-space-between pa-4>
                                     <v-flex xs5 style="overflow-y: auto;max-height: 400px" class="elevation-3">
                                         <v-treeview dense hoverable transition activatable :active.sync="activeworkitem"
@@ -136,17 +139,39 @@
                                     </v-flex>
                                 </v-layout>
 
-                            </v-tab-item>
-                            <v-tab-item key="gantt" class="mx-3 my-3  elevation-3">
+                            </v-tab-item> -->
+                            <v-tab-item key="dashboard" class="mx-3 my-3  elevation-3">
+                                <v-data-table 
+                                disable-pagination="true" 
+                                fixed-header="true" 
+                                :headers="headers" 
+                                :items="engagements" 
+                                items-per-page="25" 
+                                item-key="id"
+                                group-by="category"
+                                class="elevation-2">
+
+                                    <template v-slot:items="props">
+                                        <tr>
+                                            <td v-for="(field,fidx) in headers" v-html="props.item[field.value]"
+                                                :key="'column_'+fidx"></td>
+                                        </tr>
+                                    </template>
+                                </v-data-table>
+
+                                <hr></hr>
+
                                 <gantt-elastic :tasks="tasks" :options="options">
-                                    <gantt-header slot="header"></gantt-header>
+                                    <!-- <gantt-header slot="header"></gantt-header> -->
                                 </gantt-elastic>
                             </v-tab-item>
-                            <v-tab-item key="category">
+
+
+                            <v-tab-item key="settings">
                                 <v-card fluid wrap justify-center class="mx-2 my-2">
                                     <v-tabs v-model="tab2" background-color="transparent">
-                                        <v-tab key="analysis">
-                                            Analysis
+                                        <v-tab key="security">
+                                            Security
                                         </v-tab>
                                         <v-tab key="entities">
                                             Entity
@@ -156,9 +181,9 @@
                                         </v-tab>
                                     </v-tabs>
                                     <v-tabs-items v-model="tab2">
-                                        <v-tab-item key="analysis">
+                                        <v-tab-item key="security">
                                             <v-layout justify-space-between pa-4>
-                                                <scenarios-view></scenarios-view>
+
                                             </v-layout>
                                         </v-tab-item>
 
@@ -180,13 +205,13 @@
                     </v-card>
                 </v-container>
             </v-content>
-            <v-footer app fixed>
+            <!-- <v-footer app fixed>
                 <span>&copy; 2019</span>
-            </v-footer>
+            </v-footer> -->
         </v-app>
     </div>
 
-    <script type="text/x-template" id="my-recursive-component">
+    <!-- <script type="text/x-template" id="my-recursive-component">
         <template
             v-for="fieldkey in Object.keys(object)">
             <v-flex tag="strong" xs12 text-right >{{fieldkey}}:
@@ -198,8 +223,8 @@
             </v-flex>
         
         </template>
-      </script>
-    <script type="text/x-template" id="scenarios-template">
+      </script> -->
+    <!-- <script type="text/x-template" id="scenarios-template">
         <v-flex xs12 sm12 style="min-height: 400px" >
                 <v-card>
         <v-data-table
@@ -210,7 +235,7 @@
       ></v-data-table>
                 </v-card>
             </v-flex>
-    </script>
+    </script> -->
     <script type="text/x-template" id="entity-template">
         <v-flex xs12 sm12 >
             <v-card>
@@ -397,6 +422,7 @@
     <script src="/ado_data/results.js"></script>
     <script src="/ado_data/result_items.js"></script>
     <script src="/ado_data/scenarios.js"></script>
+    <script src="/node_modules/fuse.js/dist/fuse.js"></script>
     <script src="/node_modules/vue/dist/vue.min.js"></script>
     <script src="/node_modules/vuetify/dist/vuetify.min.js"></script>
     <script src="/node_modules/chart.js/dist/Chart.bundle.min.js"></script>
@@ -415,7 +441,7 @@
     <script src="/node_modules/echarts-wordcloud/dist/echarts-wordcloud.min.js"></script>
     <script src="/node_modules/dayjs/dayjs.min.js"></script>
     <script src="/node_modules/gantt-elastic/dist/GanttElastic.umd.min.js"></script>
-    <script src="/node_modules/gantt-elastic-header/dist/Header.umd.js"></script>
+    <!-- <script src="/node_modules/gantt-elastic-header/dist/Header.umd.js"></script> -->
     <!-- <script src="/node_modules/vue-resize-directive/dist/Vueresize.js"></script> -->
 
 

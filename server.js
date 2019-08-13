@@ -16,6 +16,8 @@ function startWebApp() {
     const path_1 = require("path");
     dotenv_1.config({ path: path_1.resolve(__dirname, "./.env.ado") });
     const queryHelper = new connection_1.QueryHelper(process.env.ADO_TOKEN, "CSEng");
+
+    
     const app = express();
     app.use('/public', express.static(__dirname +'/static'))
     app.use('/ado_data', express.static(__dirname +'/ado_data'))

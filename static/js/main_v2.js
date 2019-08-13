@@ -346,12 +346,14 @@ var vm = new Vue({
     router: router,
     store: store,
     components: {
-        'gantt-header': Header,
+        'gantt-header': { template: `<span>Gantt Chart</span>` }, // or Header,
         'gantt-elastic': GanttElastic,
         'gantt-footer': {
             template: `<span>this is a footer</span>`
         }
     },
+
+
 
 
     data: {
@@ -377,6 +379,7 @@ var vm = new Vue({
         progressvalue: 0,
         progresscount: 0,
         treeitems: [],
+        engagements: [],
         activeworkitem: [],
         tasks: tasks.map(task => Object.assign({}, task)),
         options,
@@ -385,9 +388,108 @@ var vm = new Vue({
                 'font-weight': 'bold'
             }
         },
-        destroy: false
+        destroy: false,
+        categoryinfo: {},
+        // headers: [
+        //   {
+        //     text: 'Dessert (100g serving)',
+        //     align: 'left',
+        //     sortable: false,
+        //     value: 'name',
+        //   },
+        //   { text: 'Calories', value: 'calories' },
+        //   { text: 'Fat (g)', value: 'fat' },
+        //   { text: 'Carbs (g)', value: 'carbs' },
+        //   { text: 'Protein (g)', value: 'protein' },
+        //   { text: 'Iron (%)', value: 'iron' },
+        // ],
+        // desserts: [
+        //   {
+        //     name: 'Frozen Yogurt',
+        //     calories: 159,
+        //     fat: 6.0,
+        //     carbs: 24,
+        //     protein: 4.0,
+        //     iron: '1%',
+        //   },
+        //   {
+        //     name: 'Ice cream sandwich',
+        //     calories: 237,
+        //     fat: 9.0,
+        //     carbs: 37,
+        //     protein: 4.3,
+        //     iron: '1%',
+        //   },
+        //   {
+        //     name: 'Eclair',
+        //     calories: 262,
+        //     fat: 16.0,
+        //     carbs: 23,
+        //     protein: 6.0,
+        //     iron: '7%',
+        //   },
+        //   {
+        //     name: 'Cupcake',
+        //     calories: 305,
+        //     fat: 3.7,
+        //     carbs: 67,
+        //     protein: 4.3,
+        //     iron: '8%',
+        //   },
+        //   {
+        //     name: 'Gingerbread',
+        //     calories: 356,
+        //     fat: 16.0,
+        //     carbs: 49,
+        //     protein: 3.9,
+        //     iron: '16%',
+        //   },
+        //   {
+        //     name: 'Jelly bean',
+        //     calories: 375,
+        //     fat: 0.0,
+        //     carbs: 94,
+        //     protein: 0.0,
+        //     iron: '0%',
+        //   },
+        //   {
+        //     name: 'Lollipop',
+        //     calories: 392,
+        //     fat: 0.2,
+        //     carbs: 98,
+        //     protein: 0,
+        //     iron: '2%',
+        //   },
+        //   {
+        //     name: 'Honeycomb',
+        //     calories: 408,
+        //     fat: 3.2,
+        //     carbs: 87,
+        //     protein: 6.5,
+        //     iron: '45%',
+        //   },
+        //   {
+        //     name: 'Donut',
+        //     calories: 452,
+        //     fat: 25.0,
+        //     carbs: 51,
+        //     protein: 4.9,
+        //     iron: '22%',
+        //   },
+        //   {
+        //     name: 'KitKat',
+        //     calories: 518,
+        //     fat: 26.0,
+        //     carbs: 65,
+        //     protein: 7,
+        //     iron: '6%',
+        //   },
+        // ],
     },
     computed: {
+        ...Vuex.mapState([
+            'entities', 'categories'
+        ]),
         objectlength() {
             return Object.keys(this.objects).length
         },
@@ -399,7 +501,49 @@ var vm = new Vue({
         },
         selectedobj() {
             return this.selectedworkitem ? this.objects[this.selectedworkitem].value.fields : {}
-        }
+        },
+        headers() {
+            return [
+                {
+                    text: 'ID',
+                    align: 'left',
+                    sortable: true,
+                    value: 'id',
+                },
+                {
+                    text: 'Organization',
+                    align: 'center',
+                    sortable: true,
+                    value: 'organization',
+                },
+                {
+                    text: 'Title',
+                    align: 'left',
+                    sortable: false,
+                    value: 'title',
+                },
+                {
+                    text: 'Category',
+                    align: 'left',
+                    sortable: true,
+                    value: 'category',
+                },
+                {
+                    text: 'Status',
+                    align: 'left',
+                    sortable: true,
+                    value: 'status',
+                },
+                {
+                    text: 'Assigned To',
+                    align: 'left',
+                    sortable: false,
+                    value: 'assignedto',
+                },
+                
+            ]
+        },
+        
     },
     methods: {
         ...Vuex.mapMutations([
@@ -493,7 +637,7 @@ var vm = new Vue({
                 if (that.objects[child]) {
                     var subobj = that.objects[child].value
                     var childobj = { id: parseInt(child), name: subobj.fields["System.Title"], label: subobj.fields["System.Title"], type: "project", children: [] };
-                    if(subobj.fields["System.AssignedTo"])
+                    if (subobj.fields["System.AssignedTo"])
                         childobj.assignedTo = subobj.fields["System.AssignedTo"]["displayName"]
                     that.findchildren(childobj)
                     parentobj.children.push(childobj);
@@ -505,6 +649,19 @@ var vm = new Vue({
                         childobj.progress = 100
 
 
+                    }
+
+                    if (subobj.fields["System.WorkItemType"] == "Engagement") {
+                        that.engagements.push(
+                            {
+                                id: parseInt(child),
+                                title: subobj.fields["System.Title"],
+                                assignedto: subobj.fields["System.AssignedTo"]?subobj.fields["System.AssignedTo"]["displayName"]:'-',
+                                description: that.strip(subobj.fields["System.Description"]),
+                                status:subobj.fields["CSEngineering-V2.OverallStatus"],
+                                organization:parentobj.name,
+                            }
+                        )
                     }
 
                     childobj.label = `<a href="https://csefy19.visualstudio.com/Organizations/_workitems/edit/${childobj.id}" target="_blank" style="color:#0077c0;">${childobj.label}</a>`
@@ -594,7 +751,13 @@ var vm = new Vue({
         //         }
         //     });
         // },
+        strip(html) {
 
+            html = html || '';
+
+            return html.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>?/gi, '').trim();
+
+        },
         loadworkitems(ids) {
             var that = this;
             $.ajax({
@@ -625,6 +788,8 @@ var vm = new Vue({
 
 
                         that.tasks = that.buildTasks(treeitems).map(task => Object.assign({}, task))
+                        that.categoryinfo = that.engagement2Category()
+                    
                         // console.log(JSON.stringify(that.tasks, null, 4));
 
                     }
@@ -656,6 +821,7 @@ var vm = new Vue({
             this.progressvalue = 0;
             this.progresscount = 0;
             this.treeitems = [];
+            this.engagements = [];
             this.objects = {};
             var that = this;
             $.ajax({
@@ -692,10 +858,97 @@ var vm = new Vue({
 
                 this.treeitems = this.calctreeitems()
                 this.tasks = this.buildTasks(this.treeitems).map(task => Object.assign({}, task))
-
+                this.categoryinfo = this.engagement2Category()
 
             }
+        },
+        fuseSearch(word, list) {
+            var options = {
+                threshold: 0.2,
+                location: 0,
+                distance: 100,
+                maxPatternLength: 32,
+                minMatchCharLength: 1,
+                keys: [
+                    "title",
+                    "description"
+                ],
+                id: 'id'
+            };
+            var fuse = new Fuse(list, options); // "list" is the item array
+            return fuse.search(word);
+        },
+        engagememt2Keywords() {
+            var that = this;
+            var entity2engagements = {}
+            this.entities.forEach((entity) => {
+                var keywords = entity.keywords.split("\n")
+                keywords.forEach((keyword) => {
+                    var engagements = that.fuseSearch(keyword, that.engagements)
+                    engagements.forEach(eng => {
+                        entity2engagements[eng] = entity2engagements[eng] || []
+                        if (entity2engagements[eng].indexOf(entity.name) == -1) {
+                            entity2engagements[eng].push(entity.name)
+                        }
+                    })
+                })
+            })
+            //console.log(entity2engagements);
+
+            return entity2engagements;
+        },
+        engagement2Category() {
+            var that = this;
+            var entity2engagements = this.engagememt2Keywords()
+            var categoriesData = {}
+            Object.keys(entity2engagements).forEach(function (engagement, idx) {
+                var categoryRow = [];
+                that.categories.forEach(function (category) {
+
+                    category.rules.forEach(function (rule) {
+                        var primaryMatched = false;
+                        if (rule.primaryobjects.length > 0) {
+                            for (var j = 0; j < entity2engagements[engagement].length; j++) {
+                                for (var k = 0; k < rule.primaryobjects.length; k++) {
+                                    if (rule.primaryobjects[k].name == entity2engagements[engagement][j]) {
+                                        primaryMatched = true
+                                        break;
+                                    }
+                                }
+
+                            }
+                        }
+
+                        if (primaryMatched && rule.secondaryobjects.length > 0) {
+                            entity2engagements[engagement].forEach(function (ent) {
+                                for (var k = 0; k < rule.secondaryobjects.length; k++) {
+                                    if (rule.secondaryobjects[k].name == ent) {
+                                        if (categoryRow.indexOf(category.name) == -1)
+                                            categoryRow.push(category.name)
+                                        break;
+                                    }
+                                }
+
+                            })
+                        } else if (primaryMatched) {
+                            if (categoryRow.indexOf(category.name) == -1)
+                                categoryRow.push(category.name)
+                        }
+                    })
+                })
+
+                categoriesData[engagement] = (categoryRow)
+            })
+
+            that.engagements.forEach((eng)=>{
+                eng.category = categoriesData[eng.id].join(",")
+            })
+
+            //console.log(categoriesData);
+            return categoriesData;
         }
+
+
 
     },
 
@@ -710,16 +963,16 @@ var vm = new Vue({
     mounted: function () {
         this.fromDate = this.formatDate(this.fromDate2)
         this.toDate = this.formatDate(this.toDate2)
-        this.buildObjectsFromLocal()
-        console.log(JSON.stringify(this.tasks, null, 4));
-        if(window["scenarios"] && window["scenarios"].entities) {
+
+        if (window["scenarios"] && window["scenarios"].entities) {
             this.importEntities(window["scenarios"].entities)
         }
 
-        if(window["scenarios"] && window["scenarios"].categories) {
+        if (window["scenarios"] && window["scenarios"].categories) {
             this.importCategories(window["scenarios"].categories)
         }
-        
+        this.buildObjectsFromLocal()
+
     }
 })
 
@@ -742,9 +995,9 @@ Vue.component("entity-view", {
             'entities'
         ]),
     },
-    mounted: function(){
-        
-        
+    mounted: function () {
+
+
 
     }
 });
@@ -768,10 +1021,10 @@ Vue.component("category-view", {
             'entities', 'categories'
         ]),
     },
-    mounted(){
-       
+    mounted() {
 
-        
+
+
     }
 });
 
@@ -781,101 +1034,101 @@ Vue.component("scenarios-view", {
     data: function () {
         return {
             headers: [
-              {
-                text: 'Dessert (100g serving)',
-                align: 'left',
-                sortable: false,
-                value: 'name',
-              },
-              { text: 'Calories', value: 'calories' },
-              { text: 'Fat (g)', value: 'fat' },
-              { text: 'Carbs (g)', value: 'carbs' },
-              { text: 'Protein (g)', value: 'protein' },
-              { text: 'Iron (%)', value: 'iron' },
+                {
+                    text: 'Dessert (100g serving)',
+                    align: 'left',
+                    sortable: false,
+                    value: 'name',
+                },
+                { text: 'Calories', value: 'calories' },
+                { text: 'Fat (g)', value: 'fat' },
+                { text: 'Carbs (g)', value: 'carbs' },
+                { text: 'Protein (g)', value: 'protein' },
+                { text: 'Iron (%)', value: 'iron' },
             ],
             desserts: [
-              {
-                name: 'Frozen Yogurt',
-                calories: 159,
-                fat: 6.0,
-                carbs: 24,
-                protein: 4.0,
-                iron: '1%',
-              },
-              {
-                name: 'Ice cream sandwich',
-                calories: 237,
-                fat: 9.0,
-                carbs: 37,
-                protein: 4.3,
-                iron: '1%',
-              },
-              {
-                name: 'Eclair',
-                calories: 262,
-                fat: 16.0,
-                carbs: 23,
-                protein: 6.0,
-                iron: '7%',
-              },
-              {
-                name: 'Cupcake',
-                calories: 305,
-                fat: 3.7,
-                carbs: 67,
-                protein: 4.3,
-                iron: '8%',
-              },
-              {
-                name: 'Gingerbread',
-                calories: 356,
-                fat: 16.0,
-                carbs: 49,
-                protein: 3.9,
-                iron: '16%',
-              },
-              {
-                name: 'Jelly bean',
-                calories: 375,
-                fat: 0.0,
-                carbs: 94,
-                protein: 0.0,
-                iron: '0%',
-              },
-              {
-                name: 'Lollipop',
-                calories: 392,
-                fat: 0.2,
-                carbs: 98,
-                protein: 0,
-                iron: '2%',
-              },
-              {
-                name: 'Honeycomb',
-                calories: 408,
-                fat: 3.2,
-                carbs: 87,
-                protein: 6.5,
-                iron: '45%',
-              },
-              {
-                name: 'Donut',
-                calories: 452,
-                fat: 25.0,
-                carbs: 51,
-                protein: 4.9,
-                iron: '22%',
-              },
-              {
-                name: 'KitKat',
-                calories: 518,
-                fat: 26.0,
-                carbs: 65,
-                protein: 7,
-                iron: '6%',
-              },
+                {
+                    name: 'Frozen Yogurt',
+                    calories: 159,
+                    fat: 6.0,
+                    carbs: 24,
+                    protein: 4.0,
+                    iron: '1%',
+                },
+                {
+                    name: 'Ice cream sandwich',
+                    calories: 237,
+                    fat: 9.0,
+                    carbs: 37,
+                    protein: 4.3,
+                    iron: '1%',
+                },
+                {
+                    name: 'Eclair',
+                    calories: 262,
+                    fat: 16.0,
+                    carbs: 23,
+                    protein: 6.0,
+                    iron: '7%',
+                },
+                {
+                    name: 'Cupcake',
+                    calories: 305,
+                    fat: 3.7,
+                    carbs: 67,
+                    protein: 4.3,
+                    iron: '8%',
+                },
+                {
+                    name: 'Gingerbread',
+                    calories: 356,
+                    fat: 16.0,
+                    carbs: 49,
+                    protein: 3.9,
+                    iron: '16%',
+                },
+                {
+                    name: 'Jelly bean',
+                    calories: 375,
+                    fat: 0.0,
+                    carbs: 94,
+                    protein: 0.0,
+                    iron: '0%',
+                },
+                {
+                    name: 'Lollipop',
+                    calories: 392,
+                    fat: 0.2,
+                    carbs: 98,
+                    protein: 0,
+                    iron: '2%',
+                },
+                {
+                    name: 'Honeycomb',
+                    calories: 408,
+                    fat: 3.2,
+                    carbs: 87,
+                    protein: 6.5,
+                    iron: '45%',
+                },
+                {
+                    name: 'Donut',
+                    calories: 452,
+                    fat: 25.0,
+                    carbs: 51,
+                    protein: 4.9,
+                    iron: '22%',
+                },
+                {
+                    name: 'KitKat',
+                    calories: 518,
+                    fat: 26.0,
+                    carbs: 65,
+                    protein: 7,
+                    iron: '6%',
+                },
             ],
-          }
+        }
     },
     methods: {
         ...Vuex.mapMutations([
@@ -888,10 +1141,10 @@ Vue.component("scenarios-view", {
             'entities', 'categories'
         ]),
     },
-    mounted(){
-       
+    mounted() {
 
-        
+
+
     }
 });
 
